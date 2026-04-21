@@ -1,0 +1,17 @@
+.venv/
+__pycache__/
+*.pyc
+.DS_Store
+
+detections.db
+static/captures/*
+!static/captures/.gitkeep
+
+uploads/*
+!uploads/.gitkeep
+
+models/*
+!models/.gitkeep
+
+runs/*
+!runs/.gitkeep

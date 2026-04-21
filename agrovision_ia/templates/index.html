@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AgroVision AI</title>
+  <link rel="stylesheet" href="/static/style.css" />
+  <script src="/static/dashboard.js"></script>
+</head>
+<body>
+  <main class="container">
+    <header class="top">
+      <h1>AgroVision AI</h1>
+      <p>Monitoramento com FastAPI, OpenCV e YOLO</p>
+      <p><strong>Modelo:</strong> {{ model_path }}</p>
+      {% if model_error %}
+      <p class="warning">Falha ao carregar modelo: {{ model_error }}</p>
+      {% endif %}
+    </header>
+
+    <section class="panel">
+      <h2>Stream da Câmera</h2>
+      <img id="camera-frame" src="/frame" alt="Frame da câmera" />
+      <small>Atualização automática a cada 500ms</small>
+    </section>
+
+    <section class="panel">
+      <h2>Eventos Recentes</h2>
+      <table id="events-table">
+        <thead>
+          <tr>
+            <th>Data/Hora</th>
+            <th>Classe</th>
+            <th>Confiança</th>
+            <th>Evidência</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for event in events %}
+          <tr>
+            <td>{{ event.event_time }}</td>
+            <td>{{ event.label }}</td>
+            <td>{{ "%.2f"|format(event.confidence) }}</td>
+            <td><a href="{{ event.image_path }}" target="_blank">abrir</a></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </section>
+
+    <section class="panel">
+      <h2>Agente AgroVision</h2>
+      <div id="chat-container">
+        <div id="chat-messages"></div>
+        <div id="chat-input-container">
+          <input type="text" id="chat-input" placeholder="Pergunte sobre os eventos..." />
+          <button id="chat-send">Enviar</button>
+        </div>
+      </div>
+    </section>
+  </main>
+</body>
+</html>
