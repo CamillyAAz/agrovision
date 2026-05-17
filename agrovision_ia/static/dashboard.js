@@ -72,12 +72,25 @@ function renderEvents(events) {
   eventsTableBody.innerHTML = "";
   for (const event of events) {
     const tr = document.createElement("tr");
-    tr.innerHTML = `
-      <td>${event.event_time}</td>
-      <td>${event.label}</td>
-      <td>${Number(event.confidence).toFixed(2)}</td>
-      <td><a href="${event.image_path}" target="_blank">abrir</a></td>
-    `;
+
+    const eventTime = document.createElement("td");
+    eventTime.textContent = event.event_time;
+
+    const label = document.createElement("td");
+    label.textContent = event.label;
+
+    const confidence = document.createElement("td");
+    confidence.textContent = Number(event.confidence).toFixed(2);
+
+    const evidence = document.createElement("td");
+    const link = document.createElement("a");
+    link.href = event.image_path;
+    link.target = "_blank";
+    link.rel = "noopener noreferrer";
+    link.textContent = "abrir";
+    evidence.appendChild(link);
+
+    tr.append(eventTime, label, confidence, evidence);
     eventsTableBody.appendChild(tr);
   }
 }

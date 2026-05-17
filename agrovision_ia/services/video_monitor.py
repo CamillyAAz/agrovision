@@ -6,15 +6,18 @@ from collections import defaultdict
 from typing import Dict, Any
 
 from .config import (
-    CAMERA_SOURCE, CAMERA_RECONNECT_SECONDS, MODEL_PATH, CONFIDENCE_THRESHOLD,
-    TARGET_CLASSES, MIN_CONSECUTIVE_FRAMES, ALERT_COOLDOWN_SECONDS, SAVE_DIR
+    CAMERA_SOURCE,
+    CAMERA_RECONNECT_SECONDS,
+    MIN_CONSECUTIVE_FRAMES,
+    ALERT_COOLDOWN_SECONDS,
+    SAVE_DIR,
 )
+from .detection_service import yolo_detector
 from .event_repository import save_event
+
 
 class VideoMonitor:
     def __init__(self):
-        self.model = None
-        self.model_error = None
         self.last_frame = None
         self.last_frame_lock = threading.Lock()
         self.detection_state = defaultdict(int)
@@ -22,29 +25,7 @@ class VideoMonitor:
         self.is_running = False
 
     def load_model(self) -> None:
-        try:
-            from ultralytics import YOLO
-            self.model = YOLO(MODEL_PATH)
-            self.model_error = None
-            print(f"Modelo carregado com sucesso: {MODEL_PATH}")
-        except Exception as exc:
-            self.model = None
-            self.model_error = str(exc)
-            print(f"Falha ao carregar modelo YOLO: {exc}")
-
-    def draw_box(self, frame, x1, y1, x2, y2, label, conf) -> None:
-        import cv2
-        text = f"{label} {conf:.2f}"
-        cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
-        cv2.putText(
-            frame,
-            text,
-            (x1, max(20, y1 - 10)),
-            cv2.FONT_HERSHEY_SIMPLEX,
-            0.7,
-            (0, 255, 0),
-            2,
-        )
+        yolo_detector.load_model()
 
     def should_alert(self, label: str) -> bool:
         now = time.time()
@@ -52,10 +33,13 @@ class VideoMonitor:
 
     def process_stream(self) -> None:
         import cv2
+
         while self.is_running:
             cap = cv2.VideoCapture(CAMERA_SOURCE)
             if not cap.isOpened():
-                print(f"Erro ao abrir câmera: {CAMERA_SOURCE}. Tentando reconectar em {CAMERA_RECONNECT_SECONDS} segundos.")
+                print(
+                    f"Erro ao abrir câmera: {CAMERA_SOURCE}. Tentando reconectar em {CAMERA_RECONNECT_SECONDS} segundos."
+                )
                 time.sleep(CAMERA_RECONNECT_SECONDS)
                 continue
 
@@ -67,37 +51,24 @@ class VideoMonitor:
                     print("Falha ao ler frame. Tentando reconectar.")
                     break
 
-                if self.model is not None:
-                    results = self.model(frame, conf=CONFIDENCE_THRESHOLD, verbose=False)
-                    found_labels_in_frame = set()
+                detections = yolo_detector.detect(frame)
+                if detections:
+                    yolo_detector.draw_boxes(frame, detections)
+
+                    found_labels = {d.label for d in detections}
                     best_conf_by_label = {}
+                    for detection in detections:
+                        best_conf_by_label[detection.label] = max(
+                            best_conf_by_label.get(detection.label, 0.0), detection.confidence
+                        )
 
-                    for result in results:
-                        if result.boxes is None:
-                            continue
+                    for label in found_labels:
+                        self.detection_state[label] += 1
 
-                        for box in result.boxes:
-                            cls_id = int(box.cls[0].item())
-                            conf = float(box.conf[0].item())
-                            label = self.model.names[cls_id]
+                    for label in set(self.detection_state) - found_labels:
+                        self.detection_state[label] = 0
 
-                            if label not in TARGET_CLASSES:
-                                continue
-
-                            found_labels_in_frame.add(label)
-                            if label not in best_conf_by_label or conf > best_conf_by_label[label]:
-                                best_conf_by_label[label] = conf
-
-                            x1, y1, x2, y2 = map(int, box.xyxy[0].tolist())
-                            self.draw_box(frame, x1, y1, x2, y2, label, conf)
-
-                    for label in TARGET_CLASSES:
-                        if label in found_labels_in_frame:
-                            self.detection_state[label] += 1
-                        else:
-                            self.detection_state[label] = 0
-
-                    for label in found_labels_in_frame:
+                    for label in found_labels:
                         if self.detection_state[label] >= MIN_CONSECUTIVE_FRAMES and self.should_alert(label):
                             event_id = str(uuid.uuid4())[:8]
                             filename = f"{datetime.now().strftime('%Y%m%d_%H%M%S')}_{label}_{event_id}.jpg"
@@ -133,14 +104,18 @@ class VideoMonitor:
             return self.last_frame.copy() if self.last_frame is not None else None
 
     def get_status(self) -> Dict[str, Any]:
+        model_status = {
+            "model_loaded": yolo_detector.is_ready(),
+            "model_error": yolo_detector.model_error,
+        }
         return {
             "online": self.is_running,
             "connected": self.last_frame is not None,
             "has_live_frame": self.last_frame is not None,
             "source_type": "stream" if isinstance(CAMERA_SOURCE, str) and CAMERA_SOURCE.startswith("http") else "webcam",
-            "model_loaded": self.model is not None,
-            "model_error": self.model_error
+            **model_status,
         }
+
 
 # Global monitor instance
 video_monitor = VideoMonitor()

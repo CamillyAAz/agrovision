@@ -49,6 +49,17 @@
     </section>
 
     <section class="panel">
+      <h2>Contexto Agrícola</h2>
+      {% if market_info.status in ['ok', 'cached'] %}
+      <p><strong>Tópico:</strong> {{ market_info.topic }}</p>
+      <p>{{ market_info.insight }}</p>
+      <p class="meta">Fonte: <a href="{{ market_info.source }}" target="_blank" rel="noopener noreferrer">{{ market_info.source }}</a></p>
+      {% else %}
+      <p class="warning">Não foi possível atualizar os dados agrícolas: {{ market_info.message }}</p>
+      {% endif %}
+    </section>
+
+    <section class="panel">
       <h2>Agente AgroVision</h2>
       <div id="chat-container">
         <div id="chat-messages"></div>

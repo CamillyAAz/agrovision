@@ -67,11 +67,16 @@ def normalize_history(history: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     # Ensure proper format
     normalized = []
     for msg in recent_history:
-        if isinstance(msg, dict) and 'role' in msg and 'content' in msg:
-            normalized.append({
-                'role': msg['role'],
-                'content': msg['content']
-            })
+        if hasattr(msg, "model_dump"):
+            msg = msg.model_dump()
+
+        if not isinstance(msg, dict):
+            continue
+
+        role = msg.get("role")
+        content = msg.get("content")
+        if role in {"user", "assistant"} and isinstance(content, str):
+            normalized.append({"role": role, "content": content[:1000]})
 
     return normalized
 

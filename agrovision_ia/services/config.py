@@ -23,6 +23,9 @@ OLLAMA_KEEP_ALIVE = os.getenv("OLLAMA_KEEP_ALIVE", "30m")
 # Agent configuration
 AGENT_EVENT_LIMIT = int(os.getenv("AGENT_EVENT_LIMIT", "12"))
 
+# Security configuration
+API_KEY = os.getenv("API_KEY", "")
+
 # Camera configuration
 CAMERA_SOURCE = os.getenv("CAMERA_SOURCE", "0")  # Default to webcam if not set
 CAMERA_RECONNECT_SECONDS = int(os.getenv("CAMERA_RECONNECT_SECONDS", "5"))
@@ -34,3 +37,12 @@ TARGET_CLASSES_STR = os.getenv("TARGET_CLASSES", "person,car,motorcycle,truck,bu
 TARGET_CLASSES: Set[str] = set(TARGET_CLASSES_STR.split(","))
 MIN_CONSECUTIVE_FRAMES = int(os.getenv("MIN_CONSECUTIVE_FRAMES", "3"))
 ALERT_COOLDOWN_SECONDS = int(os.getenv("ALERT_COOLDOWN_SECONDS", "20"))
+
+# Scraping configuration
+SCRAPER_TARGET_URL = os.getenv("SCRAPER_TARGET_URL", "https://pt.wikipedia.org/wiki/Soja")
+SCRAPER_TIMEOUT = int(os.getenv("SCRAPER_TIMEOUT", "10"))
+SCRAPER_COOLDOWN_SECONDS = int(os.getenv("SCRAPER_COOLDOWN_SECONDS", "300"))
+SCRAPER_USER_AGENT = os.getenv(
+    "SCRAPER_USER_AGENT",
+    "AgroVisionScraper/1.0 (+https://github.com/CamillyAAz/agrovision)"
+)

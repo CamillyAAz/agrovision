@@ -117,14 +117,37 @@ Acesse:
 - **Camera status**: http://127.0.0.1:8000/camera/status
 - **Agent status**: http://127.0.0.1:8000/agent/status
 - **Events**: http://127.0.0.1:8000/events
+- **Contexto agrícola**: http://127.0.0.1:8000/market-info
 
-## 8) Testar funcionalidades
+## 8) Camada de Web Scraping
+
+O sistema inclui um serviço separado de scraping que busca dados públicos gratuitos sobre soja em Wikipedia.
+Essa camada enriquece as detecções da câmera com contexto agrícola relevante, como informações de safra e mercado, ajudando a transformar eventos brutos em insights úteis.
+
+- Fonte pública e gratuita: `https://pt.wikipedia.org/wiki/Soja`
+- Serviço separado: `services/scraper.py`
+- Tratamento de erro quando o site estiver fora do ar
+- Limite de requisições via cache e cooldown
+- Resultado estruturado em JSON em `/market-info`
+- Integração com a tela principal, exibindo o contexto agrícola no dashboard
+
+## 9) Testar funcionalidades
 
 1. **Câmera**: Verificar stream em `/camera/status`
 2. **YOLO**: Eventos aparecem em `/events` quando objetos são detectados
 3. **Agente**: No dashboard, perguntar "Leia os eventos recentes, avalie o risco e recomende a próxima ação"
 
-## 9) YOLO11
+## 9) Proteção opcional por API key
+
+Se quiser proteger as rotas de API, defina uma variável de ambiente `API_KEY` no `.env`:
+
+```
+API_KEY=uma_chave_segura
+```
+
+Quando `API_KEY` estiver definida, as rotas de API exigirão o cabeçalho HTTP `x-api-key`.
+
+## 10) YOLO11
 
 Por padrão usa `yolo11n.pt` (baixado automaticamente).
 
