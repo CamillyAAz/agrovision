@@ -3,6 +3,25 @@ const chatMessages = document.getElementById("chat-messages");
 const chatInput = document.getElementById("chat-input");
 const chatSend = document.getElementById("chat-send");
 let chatHistory = [];
+let currentFrameUrl = null;
+
+const DASHBOARD_ENDPOINTS = {
+  chat: "/dashboard/chat",
+  events: "/dashboard/events",
+  frame: "/dashboard/frame",
+};
+
+function apiFetch(url, options = {}) {
+  return fetch(url, options);
+}
+
+function getEvidencePath(imagePath) {
+  if (typeof imagePath === "string" && imagePath.startsWith("/static/captures/")) {
+    return imagePath;
+  }
+
+  return "";
+}
 
 function addMessage(content, isUser = false) {
   const messageDiv = document.createElement("div");
@@ -20,7 +39,7 @@ async function sendChatMessage() {
   chatInput.value = '';
 
   try {
-    const response = await fetch('/chat', {
+    const response = await apiFetch(DASHBOARD_ENDPOINTS.chat, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -64,8 +83,22 @@ chatInput.addEventListener('keypress', (e) => {
 const frame = document.getElementById("camera-frame");
 const eventsTableBody = document.querySelector("#events-table tbody");
 
-function refreshFrame() {
-  frame.src = "/frame?t=" + Date.now();
+async function refreshFrame() {
+  try {
+    const response = await apiFetch(DASHBOARD_ENDPOINTS.frame + "?t=" + Date.now());
+    if (!response.ok) return;
+
+    const blob = await response.blob();
+    const nextFrameUrl = URL.createObjectURL(blob);
+    frame.src = nextFrameUrl;
+
+    if (currentFrameUrl) {
+      URL.revokeObjectURL(currentFrameUrl);
+    }
+
+    currentFrameUrl = nextFrameUrl;
+  } catch (_) {
+  }
 }
 
 function renderEvents(events) {
@@ -80,15 +113,23 @@ function renderEvents(events) {
     label.textContent = event.label;
 
     const confidence = document.createElement("td");
-    confidence.textContent = Number(event.confidence).toFixed(2);
+    const confidenceValue = Number(event.confidence);
+    confidence.textContent = Number.isFinite(confidenceValue)
+      ? confidenceValue.toFixed(2)
+      : "-";
 
     const evidence = document.createElement("td");
-    const link = document.createElement("a");
-    link.href = event.image_path;
-    link.target = "_blank";
-    link.rel = "noopener noreferrer";
-    link.textContent = "abrir";
-    evidence.appendChild(link);
+    const evidencePath = getEvidencePath(event.image_path);
+    if (evidencePath) {
+      const link = document.createElement("a");
+      link.href = evidencePath;
+      link.target = "_blank";
+      link.rel = "noopener noreferrer";
+      link.textContent = "abrir";
+      evidence.appendChild(link);
+    } else {
+      evidence.textContent = "-";
+    }
 
     tr.append(eventTime, label, confidence, evidence);
     eventsTableBody.appendChild(tr);
@@ -97,7 +138,7 @@ function renderEvents(events) {
 
 async function refreshEvents() {
   try {
-    const response = await fetch("/events");
+    const response = await apiFetch(DASHBOARD_ENDPOINTS.events);
     if (!response.ok) return;
     const events = await response.json();
     renderEvents(events);
@@ -105,5 +146,7 @@ async function refreshEvents() {
   }
 }
 
+refreshFrame();
+refreshEvents();
 setInterval(refreshFrame, 500);
 setInterval(refreshEvents, 3000);

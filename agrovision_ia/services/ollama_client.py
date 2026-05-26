@@ -6,7 +6,10 @@ from .config import OLLAMA_URL, OLLAMA_MODEL, OLLAMA_TIMEOUT, OLLAMA_KEEP_ALIVE
 
 class OllamaClient:
     def __init__(self):
-        self.base_url = OLLAMA_URL.rstrip('/api/chat')
+        self.base_url = OLLAMA_URL
+        if self.base_url.endswith('/api/chat'):
+            self.base_url = self.base_url[:-len('/api/chat')]
+        self.base_url = self.base_url.rstrip('/')
         self.model = OLLAMA_MODEL
         self.timeout = OLLAMA_TIMEOUT
         self.keep_alive = OLLAMA_KEEP_ALIVE

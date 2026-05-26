@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>AgroVision AI</title>
   <link rel="stylesheet" href="/static/style.css" />
-  <script src="/static/dashboard.js"></script>
+  <script src="/static/dashboard.js" defer></script>
 </head>
 <body>
   <main class="container">
@@ -20,7 +20,7 @@
 
     <section class="panel">
       <h2>Stream da Câmera</h2>
-      <img id="camera-frame" src="/frame" alt="Frame da câmera" />
+      <img id="camera-frame" alt="Frame da câmera" />
       <small>Atualização automática a cada 500ms</small>
     </section>
 
@@ -41,7 +41,11 @@
             <td>{{ event.event_time }}</td>
             <td>{{ event.label }}</td>
             <td>{{ "%.2f"|format(event.confidence) }}</td>
-            <td><a href="{{ event.image_path }}" target="_blank">abrir</a></td>
+            {% if event.image_path and event.image_path.startswith('/static/captures/') %}
+            <td><a href="{{ event.image_path }}" target="_blank" rel="noopener noreferrer">abrir</a></td>
+            {% else %}
+            <td>-</td>
+            {% endif %}
           </tr>
           {% endfor %}
         </tbody>

@@ -100,22 +100,17 @@ def health():
     }
 
 
-@app.get("/events", dependencies=[Depends(verify_api_key)])
-def get_events():
-    return JSONResponse(content=list_events(50))
-
-@app.get("/market-info", dependencies=[Depends(verify_api_key)])
-def get_market_info():
-    return JSONResponse(content=agricultural_scraper.get_latest_insight())
+def _events_response(limit: int = 50) -> JSONResponse:
+    return JSONResponse(content=list_events(limit))
 
 
-@app.get("/frame", dependencies=[Depends(verify_api_key)])
-def get_frame():
+def _frame_response() -> Response:
     import cv2
+
     frame = video_monitor.get_current_frame()
     if frame is None:
         return JSONResponse(
-            content={"message": "Ainda sem frame disponível."},
+            content={"message": "Ainda sem frame disponivel."},
             status_code=503,
         )
 
@@ -129,18 +124,7 @@ def get_frame():
     return Response(content=buffer.tobytes(), media_type="image/jpeg")
 
 
-@app.get("/camera/status", dependencies=[Depends(verify_api_key)])
-def camera_status():
-    return video_monitor.get_status()
-
-
-@app.get("/agent/status", dependencies=[Depends(verify_api_key)])
-def agent_status():
-    return get_agent_status()
-
-
-@app.post("/chat", dependencies=[Depends(verify_api_key)])
-def chat(request: ChatRequest):
+def _chat_response(request: ChatRequest):
     from services.monitoring_agent import build_agent_messages
     from services.event_repository import list_events
     from services.config import AGENT_EVENT_LIMIT
@@ -156,6 +140,50 @@ def chat(request: ChatRequest):
         )
 
     return {"response": response}
+
+
+@app.get("/dashboard/events")
+def dashboard_events():
+    return _events_response(50)
+
+
+@app.get("/dashboard/frame")
+def dashboard_frame():
+    return _frame_response()
+
+
+@app.post("/dashboard/chat")
+def dashboard_chat(request: ChatRequest):
+    return _chat_response(request)
+
+
+@app.get("/events", dependencies=[Depends(verify_api_key)])
+def get_events():
+    return _events_response(50)
+
+@app.get("/market-info", dependencies=[Depends(verify_api_key)])
+def get_market_info():
+    return JSONResponse(content=agricultural_scraper.get_latest_insight())
+
+
+@app.get("/frame", dependencies=[Depends(verify_api_key)])
+def get_frame():
+    return _frame_response()
+
+
+@app.get("/camera/status", dependencies=[Depends(verify_api_key)])
+def camera_status():
+    return video_monitor.get_status()
+
+
+@app.get("/agent/status", dependencies=[Depends(verify_api_key)])
+def agent_status():
+    return get_agent_status()
+
+
+@app.post("/chat", dependencies=[Depends(verify_api_key)])
+def chat(request: ChatRequest):
+    return _chat_response(request)
 
 
 def generate_mjpeg():

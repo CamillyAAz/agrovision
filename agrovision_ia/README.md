@@ -147,6 +147,10 @@ API_KEY=uma_chave_segura
 
 Quando `API_KEY` estiver definida, as rotas de API exigirão o cabeçalho HTTP `x-api-key`.
 
+O dashboard consome rotas internas publicas (`/dashboard/events`, `/dashboard/frame` e `/dashboard/chat`),
+sem expor a chave no JavaScript. As rotas `/events`, `/frame`, `/chat`, `/market-info`,
+`/camera/status`, `/agent/status` e `/video_feed` continuam protegidas para integracoes externas.
+
 ## 10) YOLO11
 
 Por padrão usa `yolo11n.pt` (baixado automaticamente).
